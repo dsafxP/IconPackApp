@@ -7,21 +7,13 @@ from textual.widgets import Header, Button, Static, SelectionList, Input
 from textual.containers import Container, Grid
 from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
-
-# ─── STYLE DEFINITIONS ─────────────────────────────────────────────────────────
-STYLES = [
-    "Default",
-]
-# ────────────────────────────────────────────────────────────────────────────────
+import config
 
 class IconInstallerModel:
     def __init__(self):
         self.current_style = 1
-        # mapping: (display name, source icon filename, target relative path)
-        self.game_mapping = {
-            1: ("Half-Life", "half-life.ico", r"Half-Life\valve\game.ico"),
-            # …etc.
-        }
+        self.styles = config.STYLES
+        self.game_mapping = config.GAME_MAPPING
 
     def get_available_games(self):
         return [k for k in self.game_mapping
@@ -55,7 +47,7 @@ class MainScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Container(id="main-content"):
-            yield Static("⚙️ PISTON HD ICON PACK", classes="title")
+            yield Static(config.NAME, classes="title")
             yield Button("Apply Icons", id="apply", variant="primary")
             yield Button("Select Style", id="style", variant="warning")
             yield Button("Exit", id="exit", variant="error")
@@ -81,7 +73,7 @@ class StyleSelectionScreen(Screen):
             yield Static("🎨 SELECT STYLE", classes="title")
             with Grid(id="style-grid"):
                 # dynamically generate one button per entry in STYLES
-                for idx, style_name in enumerate(STYLES, start=1):
+                for idx, style_name in enumerate(self.app.model.styles, start=1):
                     yield Button(style_name, id=f"style-{idx}", classes="style-option")
             yield Button("Back", variant="default", id="back")
 

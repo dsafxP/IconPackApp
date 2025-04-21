@@ -16,7 +16,7 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
 ## Adding a New Style
 
 1. **Edit the styles list**  
-   In `main.py`, find the `STYLES` array and add your new style name:
+   In `config.py`, find the `STYLES` list and add your new style name:
    ```python
    STYLES = [
        "Default",
@@ -31,25 +31,24 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
    └── style2/    ← “MyCoolStyle”
    ```
 3. **Populate with icons**  
-   Copy or add your `.ico` files into `icons/styleN/`, matching the filenames used by the app’s game mapping (e.g. `half-life.ico`, `doom.ico`, etc.).
+   Copy or add your `.ico` files into `icons/styleN/`, matching the filenames used by the app’s game mapping (e.g. `half-life.ico`, `mygame.ico`, etc.).
 
 ## Adding a New Game
 
 1. **Define the mapping**  
-   In `main.py`, locate the `game_mapping` in `IconInstallerModel.__init__` and add a new entry:
+   In `config.py`, locate the `GAME_MAPPING` dictionary and add a new entry under the appropriate style index:
    ```python
-   self.game_mapping = {
-       1: ("Half‑Life",   "half-life.ico",   r"Half-Life\valve\game.ico"),
-       2: ("Doom",        "doom.ico",        r"Doom\id1\game.ico"),
-       3: ("My Game",     "mygame.ico",      r"My Game\bin\icon.ico"),  # ← your new game
-       # …
+   GAME_MAPPING = {
+      1: ("Half‑Life",   "half-life.ico",   r"Half-Life\valve\game.ico"),
+      2: ("My Game",     "mygame.ico",      r"My Game\bin\icon.ico"),
    }
    ```
-   - **Key**: an integer ID (must be unique).
-   - **Tuple**:  
+   - **Key**: Unique game ID
+   - **Tuple**:
      1. Display name (shown in the UI)  
      2. Source icon filename (must match the file in each `styleN` folder)  
      3. Target relative path under your Steam common folder
+
 2. **Add icon files for each style**  
    For every `styleN` folder you’ve created, drop in your new game’s `.ico` file named exactly as in the mapping (e.g. `mygame.ico`).
 
@@ -60,12 +59,11 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
 ├── icons/
 │   ├── style1/
 │   │   ├── half‑life.ico
-│   │   ├── doom.ico
 │   │   └── mygame.ico
 │   └── style2/
 │       ├── half‑life.ico
-│       ├── doom.ico
 │       └── mygame.ico
+├── config.py
 ├── main.py
 ├── styles.css
 └── README.md
