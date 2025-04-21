@@ -5,7 +5,7 @@ import sys
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Button, Static, SelectionList, Input
-from textual.containers import Container, Grid
+from textual.containers import Container, Grid, Vertical
 from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
 import config
@@ -47,11 +47,13 @@ class MainScreen(Screen):
     CSS_PATH = "styles.css"
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        with Container(id="main-content"):
-            yield Static(config.NAME, classes="title")
-            yield Button("Apply Icons", id="apply", variant="primary")
-            yield Button("Select Style", id="style", variant="warning")
-            yield Button("Exit", id="exit", variant="error")
+        with Vertical():
+            with Container(id="main-content"):
+                yield Static(config.NAME, classes="title")
+                yield Button("Apply Icons", id="apply", variant="primary")
+                yield Button("Select Style", id="style", variant="warning")
+                yield Button("Exit", id="exit", variant="error")
+            yield Static(config.CREDITS, classes="credit")  # Credit text at bottom
 
     @on(Button.Pressed, "#apply")
     def show_apply_screen(self):
