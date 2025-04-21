@@ -1,4 +1,4 @@
-NAME = "⚙️ MY ICON PACK"
+NAME = "⚙️ MY ICON PACK" # Name displayed at the top
 
 STYLES = [
     "Default",

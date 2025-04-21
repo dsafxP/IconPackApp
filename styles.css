@@ -1,15 +1,15 @@
 /* Global */
 Screen {
     layers: base overlay;
-    background: $background;     /* dark background */
-    color: $text;                /* light amber text */
+    background: $background;
+    color: $text;
 }
 
 /* Header */
 Header {
     background: $background;
-    color: $primary;             /* bright amber */
-    border: solid $secondary;    /* darker amber border */
+    color: $primary;
+    border: solid $secondary;
     height: 3;
     content-align: center middle;
 }
@@ -23,24 +23,23 @@ Header {
 }
 
 /*────────────────────────────────────────────────────────────────────────────*/
-/* Buttons – full‑width, compact, orange scheme                              */
+/* Buttons                                                                    */
 /*────────────────────────────────────────────────────────────────────────────*/
 
 Button {
-    background: $primary;        /* bright amber fill */
-    color: $background;          /* dark text */
-    border: heavy $secondary;    /* darker amber border */
+    background: $primary;
+    color: $background;
+    border: heavy $secondary;
     padding: 0 1;
     height: 3;
-    width: 100%;                 /* fill parent width */
+    width: 100%;
     content-align: center middle;
 }
 
 Button:hover {
-    background: $secondary;      /* darker on hover */
+    background: $secondary;
 }
 
-/* Specific button groups get a bit of margin */
 #main-content Button,
 #game-buttons Button,
 #path-buttons Button,
@@ -49,7 +48,7 @@ Button:hover {
 }
 
 /*────────────────────────────────────────────────────────────────────────────*/
-/* Input field – matches scheme                                              */
+/* Input field                                                                */
 /*────────────────────────────────────────────────────────────────────────────*/
 
 Input {
@@ -62,7 +61,7 @@ Input {
 }
 
 /*────────────────────────────────────────────────────────────────────────────*/
-/* Game Selection List                                                       */
+/* Game Selection List                                                        */
 /*────────────────────────────────────────────────────────────────────────────*/
 
 #game-container {
@@ -94,7 +93,7 @@ SelectionList > .selection-list--option.--selected {
 }
 
 /*────────────────────────────────────────────────────────────────────────────*/
-/* Confirmation Dialog                                                       */
+/* Confirmation Dialog                                                        */
 /*────────────────────────────────────────────────────────────────────────────*/
 
 #confirm-dialog {
@@ -118,7 +117,7 @@ SelectionList > .selection-list--option.--selected {
 }
 
 /*────────────────────────────────────────────────────────────────────────────*/
-/* Scrollbar                                                                 */
+/* Scrollbar                                                                  */
 /*────────────────────────────────────────────────────────────────────────────*/
 
 ScrollBar {
