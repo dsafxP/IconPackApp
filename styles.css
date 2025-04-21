@@ -1,0 +1,131 @@
+/* Global */
+Screen {
+    layers: base overlay;
+    background: $background;     /* dark background */
+    color: $text;                /* light amber text */
+}
+
+/* Header */
+Header {
+    background: $background;
+    color: $primary;             /* bright amber */
+    border: solid $secondary;    /* darker amber border */
+    height: 3;
+    content-align: center middle;
+}
+
+/* Main Title */
+.title {
+    color: $primary;
+    text-style: bold underline;
+    content-align: center middle;
+    margin: 1 0;
+}
+
+/*────────────────────────────────────────────────────────────────────────────*/
+/* Buttons – full‑width, compact, orange scheme                              */
+/*────────────────────────────────────────────────────────────────────────────*/
+
+Button {
+    background: $primary;        /* bright amber fill */
+    color: $background;          /* dark text */
+    border: heavy $secondary;    /* darker amber border */
+    padding: 0 1;
+    height: 3;
+    width: 100%;                 /* fill parent width */
+    content-align: center middle;
+}
+
+Button:hover {
+    background: $secondary;      /* darker on hover */
+}
+
+/* Specific button groups get a bit of margin */
+#main-content Button,
+#game-buttons Button,
+#path-buttons Button,
+.dialog-buttons Button {
+    margin: 0 1 1 1;
+}
+
+/*────────────────────────────────────────────────────────────────────────────*/
+/* Input field – matches scheme                                              */
+/*────────────────────────────────────────────────────────────────────────────*/
+
+Input {
+    background: $background;
+    color: $text;
+    border: solid $secondary;
+    padding: 0 1;
+    height: 3;
+    width: 100%;
+}
+
+/*────────────────────────────────────────────────────────────────────────────*/
+/* Game Selection List                                                       */
+/*────────────────────────────────────────────────────────────────────────────*/
+
+#game-container {
+    padding: 1;
+    layout: vertical;
+}
+
+#game-list {
+    border: solid $secondary;
+    padding: 0 1;
+    margin: 1 0;
+    width: 1fr;
+    height: 1fr;
+    overflow-y: auto;
+}
+
+/* Individual options */
+SelectionList > .selection-list--option {
+    padding: 0 1;
+}
+
+SelectionList > .selection-list--option:hover {
+    background: $secondary;
+}
+
+SelectionList > .selection-list--option.--selected {
+    background: $primary;
+    color: $background;
+}
+
+/*────────────────────────────────────────────────────────────────────────────*/
+/* Confirmation Dialog                                                       */
+/*────────────────────────────────────────────────────────────────────────────*/
+
+#confirm-dialog {
+    border: double $primary;
+    background: $background;
+    width: 60%;
+    height: auto;
+    padding: 1;
+    content-align: center middle;
+}
+
+.dialog-message {
+    content-align: center middle;
+    padding: 1;
+}
+
+.dialog-buttons {
+    grid-size: 2;
+    grid-columns: 1fr;
+    margin: 1 0;
+}
+
+/*────────────────────────────────────────────────────────────────────────────*/
+/* Scrollbar                                                                 */
+/*────────────────────────────────────────────────────────────────────────────*/
+
+ScrollBar {
+    width: 1;
+    color: $secondary;
+}
+
+ScrollBar > .scrollbar--slider {
+    background: $primary;
+}
