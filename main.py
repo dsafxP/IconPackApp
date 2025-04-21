@@ -1,6 +1,7 @@
 import shutil
 import os
 import platform
+import sys
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Button, Static, SelectionList, Input
@@ -143,9 +144,19 @@ class GameSelectionScreen(Screen):
 
     @work(thread=True)
     def apply_icons(self):
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(__file__)
+
         for game_id in self.selected_games:
             name, src_icon, target_rel = self.app.model.game_mapping[game_id]
-            src = os.path.join("icons", f"style{self.app.model.current_style}", src_icon)
+            src = os.path.join(
+                base_path,
+                "icons",
+                f"style{self.app.model.current_style}",
+                src_icon
+            )
             dest = os.path.join(self.app.common_path, target_rel)
 
             if not os.path.isdir(os.path.dirname(dest)):

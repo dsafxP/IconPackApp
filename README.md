@@ -68,3 +68,10 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
 ├── styles.css
 └── README.md
 ```
+
+## Building
+
+Run the following command:
+```bash
+pyinstaller --onefile --name "IconPackApp" --add-data "icons;icons" --add-data "config.py;." --add-data "styles.css;." main.py
+```
