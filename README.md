@@ -39,15 +39,16 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
    In `config.py`, locate the `GAME_MAPPING` dictionary and add a new entry under the appropriate style index:
    ```python
    GAME_MAPPING = {
-      1: ("Half‑Life",   "half-life.ico",   r"Half-Life\valve\game.ico"),
-      2: ("My Game",     "mygame.ico",      r"My Game\bin\icon.ico"),
+      1: ("Half‑Life",   "half-life.ico",   r"steamapps\common\Half-Life\valve\game.ico",  70),
+      2: ("My Game",     "mygame.ico",      r"steamapps\common\My Game\bin\icon.ico",      0),
    }
    ```
    - **Key**: Unique game ID
    - **Tuple**:
      1. Display name (shown in the UI)  
      2. Source icon filename (must match the file in each `styleN` folder)  
-     3. Target relative path under your Steam common folder
+     3. Target relative path under your Steam folder
+     4. Steam application identifier
 
 2. **Add icon files for each style**  
    For every `styleN` folder you’ve created, drop in your new game’s `.ico` file named exactly as in the mapping (e.g. `mygame.ico`).

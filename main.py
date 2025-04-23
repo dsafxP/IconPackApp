@@ -3,11 +3,12 @@ import os
 import platform
 import sys
 from textual import on, work
-from textual.app import App, ComposeResult
 from textual.widgets import Header, Button, Static, SelectionList, Input
+from textual.app import App, ComposeResult
 from textual.containers import Container, Grid, Vertical
 from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
+from PIL import Image
 import config
 
 class IconInstallerModel:
@@ -101,16 +102,16 @@ class GameSelectionScreen(Screen):
             yield Static("🎮 SELECT GAMES", classes="title")
 
             # file-path input + Set button
-            yield Static("Steam common folder:", classes="label")
+            yield Static("Steam folder:", classes="label")
             self.path_input = Input(value=self.app.common_path, placeholder=
-                                    "Enter Steam common folder…")
+                                    "Enter Steam folder…")
             yield self.path_input
             yield Button("Set…", id="set-path", variant="primary")
 
             # then the game list
             allowed = set(self.app.model.get_available_games())
             items = []
-            for idx, (name, _, target_rel) in self.app.model.game_mapping.items():
+            for idx, (name, _, target_rel, _) in self.app.model.game_mapping.items():
                 if idx in allowed:
                     full_target = os.path.join(self.app.common_path, target_rel)
                     if os.path.isdir(os.path.dirname(full_target)):
@@ -152,7 +153,7 @@ class GameSelectionScreen(Screen):
             base_path = os.path.dirname(__file__)
 
         for game_id in self.selected_games:
-            name, src_icon, target_rel = self.app.model.game_mapping[game_id]
+            name, src_icon, target_rel, appid = self.app.model.game_mapping[game_id]
             src = os.path.join(
                 base_path,
                 "icons",
@@ -171,6 +172,37 @@ class GameSelectionScreen(Screen):
             try:
                 shutil.copy(src, dest)
                 self.app.notify(f"✅ {name} applied!", timeout=2)
+
+                try:
+                    # open the .ico, convert to RGB JPEG
+                    img = Image.open(src).convert("RGB")
+                    lib_dir = os.path.join(
+                        self.app.common_path,
+                        "appcache",
+                        "librarycache",
+                        str(appid)
+                    )
+                    if not os.path.isdir(lib_dir):
+                        self.app.notify(f"⚠️ Library cache folder missing for {name}. Skipping.", timeout=3)
+                        continue
+                    
+                    # Steam names the JPG as a hash; find it
+                    existing = [
+                        fn for fn in os.listdir(lib_dir)
+                        if fn.lower().endswith((".jpg", ".jpeg"))
+                    ]
+                    if not existing:
+                        self.app.notify(f"⚠️ No existing library icon for {name}. Skipping.", timeout=3)
+                        continue
+
+                    # overwrite the first (and usually only) one
+                    hashed_file = existing[0]
+                    jpg_dest = os.path.join(lib_dir, hashed_file)
+                    img.save(jpg_dest, "JPEG")
+
+                    self.app.notify(f"✅ {name} library icon applied!", timeout=2)
+                except Exception as e:
+                    self.app.notify(f"❌ Failed library icon for {name}: {e}", timeout=3)
             except Exception as e:
                 self.app.notify(f"❌ Failed {name}: {e}", timeout=3)
 
@@ -186,9 +218,9 @@ class IconPackApp(App):
         self.model = IconInstallerModel()
         # default based on platform
         if platform.system() == "Windows":
-            self.common_path = r"C:\Program Files (x86)\Steam\steamapps\common"
+            self.common_path = r"C:\Program Files (x86)\Steam"
         elif platform.system() == "Linux":
-            self.common_path = os.path.expanduser("~/.local/share/Steam/steamapps/common")
+            self.common_path = os.path.expanduser("~/.local/share/Steam")
         else:
             self.common_path = ""
 
