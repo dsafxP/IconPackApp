@@ -1,4 +1,5 @@
 import shutil
+import sys
 from pathlib import Path
 import platform
 from typing import Set, Callable, Any
@@ -58,6 +59,11 @@ class MainScreen(Screen):
                 yield Static(config.NAME, classes="title")
                 yield Button("Apply Icons", id="apply", variant="primary")
                 yield Button("Select Style", id="style", variant="warning")
+
+                # Only show Extract Icons button when running as PyInstaller bundle
+                if getattr(sys, 'frozen', False):
+                    yield Button("Extract Icons", id="extract", variant="warning")
+
                 yield Button("Exit", id="exit", variant="error")
             yield Static(config.CREDITS, classes="credit")  # Credit text at bottom
 
@@ -69,9 +75,52 @@ class MainScreen(Screen):
     def show_style_screen(self):
         self.app.push_screen(StyleSelectionScreen())
 
+    @on(Button.Pressed, "#extract")
+    def extract_icons(self):
+        """Extract icons functionality - copies the icons folder to current working directory"""
+        try:
+            base_path = Path(__file__).parent
+
+            icons_source = base_path / "icons"
+            icons_dest = Path.cwd() / "icons"
+
+            # Check if source icons folder exists
+            if not icons_source.exists():
+                self.app.notify("❌ Icons folder not found!", timeout=3)
+                return
+
+            # If destination already exists, ask for confirmation
+            if icons_dest.exists():
+                message = "Icons folder already exists. Overwrite?"
+                self.app.push_screen(
+                    ConfirmationScreen(message, lambda: self._do_extract_icons(icons_source, icons_dest)))
+            else:
+                self._do_extract_icons(icons_source, icons_dest)
+
+        except Exception as e:
+            self.app.notify(f"❌ Extract failed: {e}", timeout=3)
+
     @on(Button.Pressed, "#exit")
     def exit_app(self):
         self.app.exit()
+
+    def _do_extract_icons(self, source: Path, destination: Path):
+        """Perform the actual extraction"""
+        try:
+            # Remove existing destination if it exists
+            if destination.exists():
+                shutil.rmtree(destination)
+
+            # Copy the entire icons folder
+            shutil.copytree(source, destination)
+
+            # Count total files extracted
+            file_count = sum(1 for _ in destination.rglob('*') if _.is_file())
+
+            self.app.notify(f"✅ Icons extracted! ({file_count} files)", timeout=3)
+
+        except Exception as e:
+            self.app.notify(f"❌ Extract failed: {e}", timeout=3)
 
 
 class StyleSelectionScreen(Screen):
