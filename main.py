@@ -242,11 +242,12 @@ class GameSelectionScreen(Screen):
                 shutil.copy(src, dest)
                 self.app.notify(f"✅ {name} applied!", timeout=2)
 
+                # Update library cache
                 try:
                     # open the .ico, convert to RGB JPEG
                     img = Image.open(src).convert("RGB")
                     lib_dir = (
-                        app.common_path / "appcache" / "librarycache" / str(appid)
+                            app.common_path / "appcache" / "librarycache" / str(appid)
                     )
                     if not lib_dir.is_dir():
                         self.app.notify(f"⚠️ Library cache folder missing for {name}. Skipping.", timeout=3)
@@ -269,12 +270,140 @@ class GameSelectionScreen(Screen):
                     self.app.notify(f"✅ {name} library icon applied!", timeout=2)
                 except Exception as e:
                     self.app.notify(f"❌ Failed library icon for {name}: {e}", timeout=3)
+
+                # Update desktop shortcuts
+                try:
+                    self._update_desktop_shortcuts(name, appid, dest)
+                except Exception as e:
+                    self.app.notify(f"❌ Failed desktop shortcuts for {name}: {e}", timeout=3)
+
             except Exception as e:
                 self.app.notify(f"❌ Failed {name}: {e}", timeout=3)
 
     @on(Button.Pressed, "#back")
     def go_back(self):
         self.app.pop_screen()
+
+    def _update_desktop_shortcuts(self, game_name: str, appid: int, icon_path: Path):
+        """Update desktop shortcuts for the given Steam game"""
+        import os
+
+        # Get desktop path based on platform
+        if platform.system() == "Windows":
+            desktop_path = Path.home() / "Desktop"
+            # Also check public desktop
+            public_desktop = Path(os.environ.get('PUBLIC', '')) / "Desktop"
+            desktop_paths = [desktop_path, public_desktop] if public_desktop.exists() else [desktop_path]
+            shortcut_extensions = ['.url']
+        else:  # Linux/macOS
+            desktop_path = Path.home() / "Desktop"
+            desktop_paths = [desktop_path]
+            shortcut_extensions = ['.desktop']
+
+        steam_url_patterns = [
+            f"steam://rungameid/{appid}",
+            f"steam://run/{appid}",
+            f"\"steam://rungameid/{appid}\"",
+            f"\"steam://run/{appid}\""
+        ]
+
+        shortcuts_updated = 0
+
+        for desktop_dir in desktop_paths:
+            if not desktop_dir.exists():
+                continue
+
+            # Scan all potential shortcut files
+            for shortcut_file in desktop_dir.iterdir():
+                if not shortcut_file.is_file() or shortcut_file.suffix.lower() not in shortcut_extensions:
+                    continue
+
+                try:
+                    if platform.system() == "Windows":
+                        shortcuts_updated += self._update_windows_shortcut(shortcut_file, steam_url_patterns, icon_path)
+                    else:
+                        shortcuts_updated += self._update_linux_shortcut(shortcut_file, steam_url_patterns, icon_path)
+                except:
+                    # Continue processing other shortcuts even if one fails
+                    continue
+
+        if shortcuts_updated > 0:
+            self.app.notify(f"✅ {game_name}: Updated {shortcuts_updated} desktop shortcut(s)!", timeout=2)
+
+    @staticmethod
+    def _update_windows_shortcut(shortcut_file: Path, steam_patterns: list, icon_path: Path) -> int:
+        """Update Windows .url shortcut"""
+        try:
+            # Handle .url files (simple text format)
+            content = shortcut_file.read_text(encoding='utf-8', errors='ignore')
+
+            # Check if this shortcut points to our Steam game
+            if any(pattern in content for pattern in steam_patterns):
+                lines = content.split('\n')
+                icon_line_found = False
+
+                # Update existing IconFile line or add new one
+                for i, line in enumerate(lines):
+                    if line.startswith('IconFile='):
+                        lines[i] = f'IconFile={icon_path}'
+                        icon_line_found = True
+                        break
+
+                if not icon_line_found:
+                    # Add IconFile line after URL line
+                    for i, line in enumerate(lines):
+                        if line.startswith('URL='):
+                            lines.insert(i + 1, f'IconFile={icon_path}')
+                            lines.insert(i + 2, 'IconIndex=0')
+                            break
+
+                shortcut_file.write_text('\n'.join(lines), encoding='utf-8')
+                return 1
+
+        except:
+            pass
+
+        return 0
+
+    @staticmethod
+    def _update_linux_shortcut(shortcut_file: Path, steam_patterns: list, icon_path: Path) -> int:
+        """Update Linux .desktop shortcut"""
+        try:
+            content = shortcut_file.read_text(encoding='utf-8', errors='ignore')
+
+            # Check if this shortcut points to our Steam game
+            if any(pattern in content for pattern in steam_patterns):
+                lines = content.split('\n')
+                icon_line_found = False
+
+                # Update existing Icon line or add new one
+                for i, line in enumerate(lines):
+                    if line.startswith('Icon='):
+                        lines[i] = f'Icon={icon_path}'
+                        icon_line_found = True
+                        break
+
+                if not icon_line_found:
+                    # Add Icon line in the [Desktop Entry] section
+                    for i, line in enumerate(lines):
+                        if line.strip() == '[Desktop Entry]':
+                            # Find a good place to insert the Icon line
+                            insert_pos = i + 1
+                            while insert_pos < len(lines) and not lines[insert_pos].startswith('['):
+                                if lines[insert_pos].startswith('Exec='):
+                                    insert_pos += 1
+                                    break
+                                insert_pos += 1
+                            lines.insert(insert_pos, f'Icon={icon_path}')
+                            break
+
+                shortcut_file.write_text('\n'.join(lines), encoding='utf-8')
+                return 1
+
+        except:
+            pass
+
+        return 0
 
 
 class IconPackApp(App):
