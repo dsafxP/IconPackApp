@@ -6,7 +6,7 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
 
 1. **Install dependencies**  
    ```bash
-   pip install textual
+   pip install -r requirements.txt
    ```
 2. **Run the app**  
    ```bash
