@@ -10,7 +10,7 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
    ```
 2. **Run the app**  
    ```bash
-   py main.py
+   python main.py
    ```
 
 ## Adding a New Style
@@ -64,15 +64,21 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
 │   └── style2/
 │       ├── half‑life.ico
 │       └── mygame.ico
+├── build.py
 ├── config.py
 ├── main.py
-├── styles.css
-└── README.md
+├── README.md
+└── styles.css
 ```
 
 ## Building
 
-Run the following command:
+Build the application:
 ```bash
-pyinstaller --onefile --name "IconPackApp" --add-data "icons;icons" --add-data "config.py;." --add-data "styles.css;." main.py
+python build.py
+```
+
+**Add an icon** (drag or specify):
+```bash
+python build.py your-icon.ico
 ```
