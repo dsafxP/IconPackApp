@@ -1,7 +1,7 @@
 import shutil
 import os
 import platform
-import sys
+from typing import Set, Callable, Any
 from textual import on, work
 from textual.widgets import Header, Button, Static, SelectionList, Input
 from textual.app import App, ComposeResult
@@ -10,6 +10,7 @@ from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
 from PIL import Image
 import config
+
 
 class IconInstallerModel:
     def __init__(self):
@@ -21,9 +22,11 @@ class IconInstallerModel:
         return [k for k in self.game_mapping
                 if not (self.current_style == 1 and k in [6, 7])]
 
+
 class ConfirmationScreen(ModalScreen):
     BINDINGS = [("escape", "dismiss", "Close")]
-    def __init__(self, message, callback):
+
+    def __init__(self, message: str, callback: Callable[[], None]):
         super().__init__()
         self.message = message
         self.callback = callback
@@ -44,8 +47,10 @@ class ConfirmationScreen(ModalScreen):
     def cancel_action(self):
         self.dismiss()
 
+
 class MainScreen(Screen):
     CSS_PATH = "styles.css"
+
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Vertical():
@@ -68,6 +73,7 @@ class MainScreen(Screen):
     def exit_app(self):
         self.app.exit()
 
+
 class StyleSelectionScreen(Screen):
     CSS_PATH = "styles.css"
 
@@ -77,24 +83,40 @@ class StyleSelectionScreen(Screen):
             yield Static("🎨 SELECT STYLE", classes="title")
             with Grid(id="style-grid"):
                 # dynamically generate one button per entry in STYLES
-                for idx, style_name in enumerate(self.app.model.styles, start=1):
+                assert isinstance(app, IconPackApp)  # Type narrowing
+                for idx, style_name in enumerate(app.model.styles, start=1):
                     yield Button(style_name, id=f"style-{idx}", classes="style-option")
             yield Button("Back", variant="default", id="back")
 
     @on(Button.Pressed, ".style-option")
     def select_style(self, event: Button.Pressed):
         # parse the index out of the button id
-        idx = int(event.button.id.split("-", 1)[1])
-        self.app.model.current_style = idx
-        self.app.notify(f"Style changed to {event.button.label}", timeout=2)
+        button_id = event.button.id
+        if button_id is not None:
+            idx = int(button_id.split("-", 1)[1])
+
+            assert isinstance(app, IconPackApp)  # Type narrowing
+            app.model.current_style = idx
+            self.app.notify(f"Style changed to {event.button.label}", timeout=2)
 
     @on(Button.Pressed, "#back")
     def go_back(self):
         self.app.pop_screen()
 
+
 class GameSelectionScreen(Screen):
     CSS_PATH = "styles.css"
-    selected_games = reactive(set)
+    selected_games: reactive[Set[Any]] = reactive(set)
+    path_input: Input
+    selection_list: SelectionList
+
+    def __init__(
+            self,
+            name: str | None = None,
+            ide: str | None = None,
+            classes: str | None = None,
+    ):
+        super().__init__(name, ide, classes)
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -103,17 +125,19 @@ class GameSelectionScreen(Screen):
 
             # file-path input + Set button
             yield Static("Steam folder:", classes="label")
-            self.path_input = Input(value=self.app.common_path, placeholder=
-                                    "Enter Steam folder…")
+
+            assert isinstance(app, IconPackApp)  # Type narrowing
+            self.path_input = Input(value=app.common_path, placeholder=
+            "Enter Steam folder…")
             yield self.path_input
             yield Button("Set…", id="set-path", variant="primary")
 
             # then the game list
-            allowed = set(self.app.model.get_available_games())
+            allowed = set(app.model.get_available_games())
             items = []
-            for idx, (name, _, target_rel, _) in self.app.model.game_mapping.items():
+            for idx, (name, _, target_rel, _) in app.model.game_mapping.items():
                 if idx in allowed:
-                    full_target = os.path.join(self.app.common_path, target_rel)
+                    full_target = os.path.join(app.common_path, target_rel)
                     if os.path.isdir(os.path.dirname(full_target)):
                         items.append((name, idx, False))
             self.selection_list = SelectionList(*items, id="game-list")
@@ -128,7 +152,9 @@ class GameSelectionScreen(Screen):
     def set_path(self):
         new_path = self.path_input.value.strip()
         if new_path:
-            self.app.common_path = new_path
+
+            assert isinstance(app, IconPackApp)  # Type narrowing
+            app.common_path = new_path
         self.app.pop_screen()
         self.app.push_screen(GameSelectionScreen())
 
@@ -143,24 +169,23 @@ class GameSelectionScreen(Screen):
     @on(Button.Pressed, "#apply")
     def confirm_apply(self):
         message = f"Apply icons to {len(self.selected_games)} games?"
-        self.app.push_screen(ConfirmationScreen(message, self.apply_icons))
+        self.app.push_screen(ConfirmationScreen(message, self.apply_icons))  # type: ignore
 
     @work(thread=True)
     def apply_icons(self):
-        if getattr(sys, 'frozen', False):
-            base_path = sys._MEIPASS
-        else:
-            base_path = os.path.dirname(__file__)
+        base_path = os.path.dirname(__file__)
+
+        assert isinstance(app, IconPackApp)  # Type narrowing
 
         for game_id in self.selected_games:
-            name, src_icon, target_rel, appid = self.app.model.game_mapping[game_id]
+            name, src_icon, target_rel, appid = app.model.game_mapping[game_id]
             src = os.path.join(
                 base_path,
                 "icons",
-                f"style{self.app.model.current_style}",
+                f"style{app.model.current_style}",
                 src_icon
             )
-            dest = os.path.join(self.app.common_path, target_rel)
+            dest = os.path.join(app.common_path, target_rel)
 
             if not os.path.isdir(os.path.dirname(dest)):
                 self.app.notify(f"⚠️ {name} folder missing. Skipping.", timeout=3)
@@ -177,7 +202,7 @@ class GameSelectionScreen(Screen):
                     # open the .ico, convert to RGB JPEG
                     img = Image.open(src).convert("RGB")
                     lib_dir = os.path.join(
-                        self.app.common_path,
+                        app.common_path,
                         "appcache",
                         "librarycache",
                         str(appid)
@@ -185,7 +210,7 @@ class GameSelectionScreen(Screen):
                     if not os.path.isdir(lib_dir):
                         self.app.notify(f"⚠️ Library cache folder missing for {name}. Skipping.", timeout=3)
                         continue
-                    
+
                     # Steam names the JPG as a hash; find it
                     existing = [
                         fn for fn in os.listdir(lib_dir)
@@ -210,6 +235,7 @@ class GameSelectionScreen(Screen):
     def go_back(self):
         self.app.pop_screen()
 
+
 class IconPackApp(App):
     CSS_PATH = "styles.css"
 
@@ -226,6 +252,7 @@ class IconPackApp(App):
 
     def on_mount(self) -> None:
         self.push_screen(MainScreen())
+
 
 if __name__ == "__main__":
     app = IconPackApp()
