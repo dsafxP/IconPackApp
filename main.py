@@ -1,5 +1,5 @@
 import shutil
-import os
+from pathlib import Path
 import platform
 from typing import Set, Callable, Any
 from textual import on, work
@@ -127,7 +127,7 @@ class GameSelectionScreen(Screen):
             yield Static("Steam folder:", classes="label")
 
             assert isinstance(app, IconPackApp)  # Type narrowing
-            self.path_input = Input(value=app.common_path, placeholder=
+            self.path_input = Input(value=str(app.common_path), placeholder=
             "Enter Steam folder…")
             yield self.path_input
             yield Button("Set…", id="set-path", variant="primary")
@@ -137,8 +137,8 @@ class GameSelectionScreen(Screen):
             items = []
             for idx, (name, _, target_rel, _) in app.model.game_mapping.items():
                 if idx in allowed:
-                    full_target = os.path.join(app.common_path, target_rel)
-                    if os.path.isdir(os.path.dirname(full_target)):
+                    full_target = app.common_path / target_rel
+                    if full_target.parent.is_dir():
                         items.append((name, idx, False))
             self.selection_list = SelectionList(*items, id="game-list")
             yield self.selection_list
@@ -154,7 +154,7 @@ class GameSelectionScreen(Screen):
         if new_path:
 
             assert isinstance(app, IconPackApp)  # Type narrowing
-            app.common_path = new_path
+            app.common_path = Path(new_path)
         self.app.pop_screen()
         self.app.push_screen(GameSelectionScreen())
 
@@ -173,24 +173,19 @@ class GameSelectionScreen(Screen):
 
     @work(thread=True)
     def apply_icons(self):
-        base_path = os.path.dirname(__file__)
+        base_path = Path(__file__).parent
 
         assert isinstance(app, IconPackApp)  # Type narrowing
 
         for game_id in self.selected_games:
             name, src_icon, target_rel, appid = app.model.game_mapping[game_id]
-            src = os.path.join(
-                base_path,
-                "icons",
-                f"style{app.model.current_style}",
-                src_icon
-            )
-            dest = os.path.join(app.common_path, target_rel)
+            src = base_path / "icons" / f"style{app.model.current_style}" / src_icon
+            dest = app.common_path / target_rel
 
-            if not os.path.isdir(os.path.dirname(dest)):
+            if not dest.parent.is_dir():
                 self.app.notify(f"⚠️ {name} folder missing. Skipping.", timeout=3)
                 continue
-            if not os.path.isfile(src):
+            if not src.is_file():
                 self.app.notify(f"⚠️ Icon file missing for {name}. Skipping.", timeout=3)
                 continue
 
@@ -201,20 +196,17 @@ class GameSelectionScreen(Screen):
                 try:
                     # open the .ico, convert to RGB JPEG
                     img = Image.open(src).convert("RGB")
-                    lib_dir = os.path.join(
-                        app.common_path,
-                        "appcache",
-                        "librarycache",
-                        str(appid)
+                    lib_dir = (
+                        app.common_path / "appcache" / "librarycache" / str(appid)
                     )
-                    if not os.path.isdir(lib_dir):
+                    if not lib_dir.is_dir():
                         self.app.notify(f"⚠️ Library cache folder missing for {name}. Skipping.", timeout=3)
                         continue
 
                     # Steam names the JPG as a hash; find it
                     existing = [
-                        fn for fn in os.listdir(lib_dir)
-                        if fn.lower().endswith((".jpg", ".jpeg"))
+                        fn for fn in lib_dir.iterdir()
+                        if fn.suffix.lower() in (".jpg", ".jpeg")
                     ]
                     if not existing:
                         self.app.notify(f"⚠️ No existing library icon for {name}. Skipping.", timeout=3)
@@ -222,7 +214,7 @@ class GameSelectionScreen(Screen):
 
                     # overwrite the first (and usually only) one
                     hashed_file = existing[0]
-                    jpg_dest = os.path.join(lib_dir, hashed_file)
+                    jpg_dest = lib_dir / hashed_file.name
                     img.save(jpg_dest, "JPEG")
 
                     self.app.notify(f"✅ {name} library icon applied!", timeout=2)
@@ -244,11 +236,11 @@ class IconPackApp(App):
         self.model = IconInstallerModel()
         # default based on platform
         if platform.system() == "Windows":
-            self.common_path = r"C:\Program Files (x86)\Steam"
+            self.common_path = Path(r"C:\Program Files (x86)\Steam")
         elif platform.system() == "Linux":
-            self.common_path = os.path.expanduser("~/.local/share/Steam")
+            self.common_path = Path.home() / ".local" / "share" / "Steam"
         else:
-            self.common_path = ""
+            self.common_path = Path("")
 
     def on_mount(self) -> None:
         self.push_screen(MainScreen())
