@@ -1,6 +1,9 @@
 # IconPackApp ![GitHub License](https://img.shields.io/github/license/dsafxP/IconPackApp)
 
-A simple Textual‑based TUI app to apply custom game icons (“styles”) to your Steam games.
+> [!IMPORTANT]  
+> This is the `curses` based version of the app, offering support for legacy systems and a smaller build size.
+
+A simple TUI app to apply custom game icons (“styles”) to your Steam games.
 
 ## Getting Started
 
