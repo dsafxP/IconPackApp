@@ -7,7 +7,9 @@ STYLES = [
     # …add as many as you like
 ]
 
-# game_id: (display name, source icon filename, target relative path, steam app id)
+# game_id: (display name, target relative path, steam app id)
+# The system will automatically search for files named after the display name
+# in the icons directory and match them by extension to target files
 GAME_MAPPING = {
-    1: ("Half-Life", "half-life.ico", r"steamapps\common\Half-Life\valve\game.ico", 70),
+    1: ("Half-Life", r"steamapps\common\Half-Life\valve", 70),
 }

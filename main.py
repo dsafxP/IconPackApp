@@ -2,14 +2,14 @@ import shutil
 import sys
 from pathlib import Path
 import platform
-from typing import Set, Callable, Any
+from typing import Set, Callable, Any, List, Tuple, Dict
 from textual import on, work
 from textual.widgets import Header, Button, Static, SelectionList, Input
 from textual.app import App, ComposeResult
 from textual.containers import Container, Grid, Vertical
 from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
-from PIL import Image
+
 import config
 
 
@@ -22,6 +22,48 @@ class IconInstallerModel:
     def get_available_games(self):
         return [k for k in self.game_mapping
                 if not (self.current_style == 1 and k in [6, 7])]
+
+    @staticmethod
+    def find_icon_files(game_name: str, style_dir: Path) -> List[Path]:
+        """Find all icon files for a game name in the given style directory"""
+        icon_files = []
+        for file in style_dir.glob(f"{game_name}.*"):
+            if file.is_file():
+                icon_files.append(file)
+        return icon_files
+
+    @staticmethod
+    def find_target_files(target_dir: Path, extensions: Set[str]) -> List[Path]:
+        """Find all files in target directory matching any of the given extensions"""
+        target_files: List[Path] = []
+        for ext in extensions:
+            target_files.extend(target_dir.glob(f"*.{ext}"))
+        return target_files
+
+    @staticmethod
+    def get_matching_pairs(icon_files: List[Path], target_files: List[Path]) -> List[Tuple[Path, Path]]:
+        """Match icon files to target files by extension"""
+        pairs = []
+
+        # Create a mapping of extensions to target files
+        ext_to_targets: Dict[str, List[Path]] = {}
+        for target in target_files:
+            ext = target.suffix.lower().lstrip('.')
+            if ext not in ext_to_targets:
+                ext_to_targets[ext] = []
+            ext_to_targets[ext].append(target)
+
+        # Match icon files to targets by extension
+        for icon_file in icon_files:
+            icon_ext = icon_file.suffix.lower().lstrip('.')
+            if icon_ext in ext_to_targets and ext_to_targets[icon_ext]:
+                # Use the first matching target file
+                target = ext_to_targets[icon_ext][0]
+                pairs.append((icon_file, target))
+                # Remove the used target to avoid duplicates
+                ext_to_targets[icon_ext].remove(target)
+
+        return pairs
 
 
 class ConfirmationScreen(ModalScreen):
@@ -184,10 +226,10 @@ class GameSelectionScreen(Screen):
             # then the game list
             allowed = set(app.model.get_available_games())
             items = []
-            for idx, (name, _, target_rel, _) in app.model.game_mapping.items():
+            for idx, (name, target_rel, _) in app.model.game_mapping.items():
                 if idx in allowed:
                     full_target = app.common_path / target_rel
-                    if full_target.parent.is_dir():
+                    if full_target.is_dir():
                         items.append((name, idx, False))
             self.selection_list = SelectionList(*items, id="game-list")
             yield self.selection_list
@@ -201,7 +243,6 @@ class GameSelectionScreen(Screen):
     def set_path(self):
         new_path = self.path_input.value.strip()
         if new_path:
-
             assert isinstance(app, IconPackApp)  # Type narrowing
             app.common_path = Path(new_path)
         self.app.pop_screen()
@@ -227,64 +268,108 @@ class GameSelectionScreen(Screen):
         assert isinstance(app, IconPackApp)  # Type narrowing
 
         for game_id in self.selected_games:
-            name, src_icon, target_rel, appid = app.model.game_mapping[game_id]
-            src = base_path / "icons" / f"style{app.model.current_style}" / src_icon
-            dest = app.common_path / target_rel
+            name, target_rel, appid = app.model.game_mapping[game_id]
+            target_dir = app.common_path / target_rel
+            style_dir = base_path / "icons" / f"style{app.model.current_style}"
 
-            if not dest.parent.is_dir():
+            if not target_dir.is_dir():
                 self.app.notify(f"⚠️ {name} folder missing. Skipping.", timeout=3)
                 continue
-            if not src.is_file():
-                self.app.notify(f"⚠️ Icon file missing for {name}. Skipping.", timeout=3)
+
+            if not style_dir.is_dir():
+                self.app.notify(f"⚠️ Style folder missing. Skipping.", timeout=3)
                 continue
 
-            try:
-                shutil.copy(src, dest)
-                self.app.notify(f"✅ {name} applied!", timeout=2)
+            # Find all icon files for this game
+            icon_files = app.model.find_icon_files(name, style_dir)
+            if not icon_files:
+                self.app.notify(f"⚠️ No icon files found for {name}. Skipping.", timeout=3)
+                continue
+
+            # Get unique extensions from icon files
+            icon_extensions = {f.suffix.lower().lstrip('.') for f in icon_files}
+
+            # Find matching target files
+            target_files = app.model.find_target_files(target_dir, icon_extensions)
+            if not target_files:
+                self.app.notify(f"⚠️ No matching target files found for {name}. Skipping.", timeout=3)
+                continue
+
+            # Get matching pairs
+            matching_pairs = app.model.get_matching_pairs(icon_files, target_files)
+            if not matching_pairs:
+                self.app.notify(f"⚠️ No matching file pairs found for {name}. Skipping.", timeout=3)
+                continue
+
+            # Apply all matching icons
+            applied_count = 0
+            applied_files = {}  # Track which files were successfully applied
+            for src, dest in matching_pairs:
+                try:
+                    shutil.copy(src, dest)
+                    applied_count += 1
+                    # Store the destination file path by extension
+                    ext = dest.suffix.lower().lstrip('.')
+                    applied_files[ext] = dest
+                except Exception as e:
+                    self.app.notify(f"❌ Failed to copy {src.name} to {dest.name}: {e}", timeout=3)
+
+            if applied_count > 0:
+                self.app.notify(f"✅ {name}: Applied {applied_count} icon(s)!", timeout=2)
 
                 # Update library cache
                 try:
-                    # open the .ico, convert to RGB JPEG
-                    img = Image.open(src).convert("RGB")
-                    lib_dir = (
-                            app.common_path / "appcache" / "librarycache" / str(appid)
-                    )
-                    if not lib_dir.is_dir():
-                        self.app.notify(f"⚠️ Library cache folder missing for {name}. Skipping.", timeout=3)
-                        continue
-
-                    # Steam names the JPG as a hash; find it
-                    existing = [
-                        fn for fn in lib_dir.iterdir()
-                        if fn.suffix.lower() in (".jpg", ".jpeg")
-                    ]
-                    if not existing:
-                        self.app.notify(f"⚠️ No existing library icon for {name}. Skipping.", timeout=3)
-                        continue
-
-                    # overwrite the first (and usually only) one
-                    hashed_file = existing[0]
-                    jpg_dest = lib_dir / hashed_file.name
-                    img.save(jpg_dest, "JPEG")
-
-                    self.app.notify(f"✅ {name} library icon applied!", timeout=2)
+                    self._update_library_cache(name, appid, icon_files)
                 except Exception as e:
                     self.app.notify(f"❌ Failed library icon for {name}: {e}", timeout=3)
 
                 # Update desktop shortcuts
                 try:
-                    self._update_desktop_shortcuts(name, appid, dest)
+                    self._update_desktop_shortcuts(name, appid, applied_files)
                 except Exception as e:
                     self.app.notify(f"❌ Failed desktop shortcuts for {name}: {e}", timeout=3)
 
-            except Exception as e:
-                self.app.notify(f"❌ Failed {name}: {e}", timeout=3)
+    def _update_library_cache(self, name: str, appid: int, icon_files: List[Path]):
+        """Update Steam library cache with JPG file only"""
+        assert isinstance(app, IconPackApp)  # Type narrowing
+
+        lib_dir = app.common_path / "appcache" / "librarycache" / str(appid)
+        if not lib_dir.is_dir():
+            self.app.notify(f"⚠️ Library cache folder missing for {name}. Skipping.", timeout=3)
+            return
+
+        # Find existing library cache files
+        existing = [
+            fn for fn in lib_dir.iterdir()
+            if fn.suffix.lower() in (".jpg", ".jpeg")
+        ]
+        if not existing:
+            self.app.notify(f"⚠️ No existing library icon for {name}. Skipping.", timeout=3)
+            return
+
+        # Look for a JPG file only
+        jpg_icon = None
+        for icon_file in icon_files:
+            if icon_file.suffix.lower() in ('.jpg', '.jpeg'):
+                jpg_icon = icon_file
+                break
+
+        if not jpg_icon:
+            # No JPG found, skip library cache update silently
+            return
+
+        # Copy the JPG file directly
+        try:
+            shutil.copy(jpg_icon, lib_dir / existing[0].name)
+            self.app.notify(f"✅ {name} library icon applied!", timeout=2)
+        except Exception as e:
+            self.app.notify(f"❌ Failed to copy library icon for {name}: {e}", timeout=3)
 
     @on(Button.Pressed, "#back")
     def go_back(self):
         self.app.pop_screen()
 
-    def _update_desktop_shortcuts(self, game_name: str, appid: int, icon_path: Path):
+    def _update_desktop_shortcuts(self, game_name: str, appid: int, applied_files: dict):
         """Update desktop shortcuts for the given Steam game"""
         import os
 
@@ -295,10 +380,18 @@ class GameSelectionScreen(Screen):
             public_desktop = Path(os.environ.get('PUBLIC', '')) / "Desktop"
             desktop_paths = [desktop_path, public_desktop] if public_desktop.exists() else [desktop_path]
             shortcut_extensions = ['.url']
+            # Use ICO file for Windows shortcuts
+            icon_path = applied_files.get('ico')
         else:  # Linux/macOS
             desktop_path = Path.home() / "Desktop"
             desktop_paths = [desktop_path]
             shortcut_extensions = ['.desktop']
+            # Use JPG file for Linux shortcuts, fallback to ICO
+            icon_path = applied_files.get('jpg') or applied_files.get('ico')
+
+        if not icon_path:
+            # No suitable icon file was applied for shortcuts
+            return
 
         steam_url_patterns = [
             f"steam://rungameid/{appid}",

@@ -1,6 +1,6 @@
 # IconPackApp ![GitHub License](https://img.shields.io/github/license/dsafxP/IconPackApp)
 
-A simple Textual‑based TUI app to apply custom game icons (“styles”) to your Steam games.
+A simple TUI app to apply custom game icons ("styles") to your Steam games.
 
 ## Getting Started
 
@@ -27,31 +27,32 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
    Inside the `icons/` directory, make a folder named `styleN` where `N` is the 1‑based index of your style in the `STYLES` list.  
    ```
    icons/
-   ├── style1/    ← “Default”
-   └── style2/    ← “MyCoolStyle”
+   ├── style1/    ← "Default"
+   └── style2/    ← "MyCoolStyle"
    ```
 3. **Populate with icons**  
-   Copy or add your `.ico` files into `icons/styleN/`, matching the filenames used by the app’s game mapping (e.g. `half-life.ico`, `mygame.ico`, etc.).
+   Add your icon files into `icons/styleN/`. The system will automatically match files by name and extension to the target game files.
 
 ## Adding a New Game
 
 1. **Define the mapping**  
-   In `config.py`, locate the `GAME_MAPPING` dictionary and add a new entry under the appropriate style index:
+   In `config.py`, locate the `GAME_MAPPING` dictionary and add a new entry:
    ```python
    GAME_MAPPING = {
-      1: ("Half‑Life",   "half-life.ico",   r"steamapps\common\Half-Life\valve\game.ico",  70),
-      2: ("My Game",     "mygame.ico",      r"steamapps\common\My Game\bin\icon.ico",      0),
+      1: ("Half-Life", r"steamapps\common\Half-Life\valve", 70),
+      2: ("My Game", r"steamapps\common\My Game\bin", 0),
    }
    ```
    - **Key**: Unique game ID
    - **Tuple**:
      1. Display name (shown in the UI)  
-     2. Source icon filename (must match the file in each `styleN` folder)  
-     3. Target relative path under your Steam folder
-     4. Steam application identifier
+     2. Target directory path under your Steam folder
+     3. Steam application identifier
 
 2. **Add icon files for each style**  
-   For every `styleN` folder you’ve created, drop in your new game’s `.ico` file named exactly as in the mapping (e.g. `mygame.ico`).
+   For every `styleN` folder you've created, add your new game's icon files. The system will automatically search for files matching the display name and detect the appropriate extension to match target files in the game directory.
+
+   The application will automatically replace Steam library icons with JPG files found in your style directories. Simply include JPG files named after your games in each style folder, and they will be used for the Steam library display.
 
 ## Directory Structure Example
 
@@ -59,11 +60,13 @@ A simple Textual‑based TUI app to apply custom game icons (“styles”) to yo
 .
 ├── icons/
 │   ├── style1/
-│   │   ├── half‑life.ico
-│   │   └── mygame.ico
+│   │   ├── Half-Life.ico
+│   │   ├── Half-Life.jpg     ← Library icon
+│   │   └── My Game.png
 │   └── style2/
-│       ├── half‑life.ico
-│       └── mygame.ico
+│       ├── Half-Life.ico
+│       ├── Half-Life.jpg     ← Library icon
+│       └── My Game.png
 ├── build.py
 ├── config.py
 ├── main.py
