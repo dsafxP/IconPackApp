@@ -2,6 +2,9 @@ NAME = "⚙️ MY ICON PACK" # Name displayed at the top
 
 CREDITS = "Made with 💚 by dsafxP" # Displayed at the bottom
 
+# Styles can be defined as:
+# - Simple string: "Style Name" (no description)
+# - Tuple: ("Style Name", "Description text")
 STYLES = [
     "Default",
     # …add as many as you like

@@ -13,7 +13,7 @@ A simple TUI app to apply custom game icons ("styles") to your Steam games.
    python main.py
    ```
 
-## Adding a New Style
+## Adding a new style
 
 1. **Edit the styles list**  
    In `config.py`, find the `STYLES` list and add your new style name:
@@ -33,7 +33,7 @@ A simple TUI app to apply custom game icons ("styles") to your Steam games.
 3. **Populate with icons**  
    Add your icon files into `icons/styleN/`. The system will automatically match files by name and extension to the target game files.
 
-## Adding a New Game
+## Adding a new game
 
 1. **Define the mapping**  
    In `config.py`, locate the `GAME_MAPPING` dictionary and add a new entry:
@@ -54,7 +54,7 @@ A simple TUI app to apply custom game icons ("styles") to your Steam games.
 
    The application will automatically replace Steam library icons with JPG files found in your style directories. Simply include JPG files named after your games in each style folder, and they will be used for the Steam library display.
 
-## Directory Structure Example
+## Directory structure example
 
 ```
 .

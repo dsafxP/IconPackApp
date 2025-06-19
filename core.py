@@ -13,6 +13,21 @@ class IconInstallerModel:
         self.styles = config.STYLES
         self.game_mapping = config.GAME_MAPPING
 
+    def get_style_info(self, index: int) -> Tuple[str, str]:
+        """Get style name and description for a given index (1-based)"""
+        if 1 <= index <= len(self.styles):
+            style = self.styles[index - 1]
+            if isinstance(style, tuple):
+                return style[0], style[1]
+            else:
+                return style, ""
+        return "", ""
+
+    def get_style_name(self, index: int) -> str:
+        """Get just the style name for a given index (1-based)"""
+        name, _ = self.get_style_info(index)
+        return name
+
     def get_available_games(self):
         return [k for k in self.game_mapping
                 if not (self.current_style == 1 and k in [6, 7])]

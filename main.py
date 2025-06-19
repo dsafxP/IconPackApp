@@ -103,10 +103,15 @@ class StyleSelectionScreen(Screen):
             yield Static("🎨 SELECT STYLE", classes="title")
             yield Static("Choose an icon style for installation:", classes="subtitle")
 
-            with Grid(id="style-grid"):
+            with Vertical(id="style-list"):
                 assert isinstance(app, IconPackApp)  # Type narrowing
-                for idx, style_name in enumerate(app.model.styles, start=1):
-                    yield Button(style_name, id=f"style-{idx}", classes="style-option")
+                for idx in range(1, len(app.model.styles) + 1):
+                    style_name, style_desc = app.model.get_style_info(idx)
+
+                    with Container(classes="style-item"):
+                        yield Button(style_name, id=f"style-{idx}", classes="style-option")
+                        if style_desc:
+                            yield Static(style_desc, classes="style-description")
 
             # Show Back button if running as bundle, Exit button if not
             if getattr(sys, 'frozen', False):
@@ -123,7 +128,8 @@ class StyleSelectionScreen(Screen):
 
             assert isinstance(app, IconPackApp)  # Type narrowing
             app.model.current_style = idx
-            self.app.notify(f"Style selected: {event.button.label}", timeout=2)
+            style_name = app.model.get_style_name(idx)
+            self.app.notify(f"Style selected: {style_name}", timeout=2)
 
             # Proceed to game selection
             self.app.push_screen(GameSelectionScreen())
