@@ -11,6 +11,7 @@ build_args = [
     '--name=IconPackApp',
     '--add-data=icons:icons',
     '--add-data=config.py:.',
+    '--add-data=core.py:.',
     '--add-data=styles.css:.',
 ]
 
