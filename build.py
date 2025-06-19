@@ -1,4 +1,5 @@
 import sys
+
 import PyInstaller.__main__ as pyi
 
 # Get first dragged .ico file for icon (if any)

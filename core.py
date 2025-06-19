@@ -1,8 +1,8 @@
-import shutil
-import platform
-from pathlib import Path
-from typing import Set, List, Tuple, Dict
 import os
+import platform
+import shutil
+from pathlib import Path
+from typing import Dict, List, Set, Tuple
 
 import config
 

@@ -1,15 +1,16 @@
 import sys
 from pathlib import Path
-from typing import Set, Callable, Any
+from typing import Any, Callable, Set
+
 from textual import on, work
-from textual.widgets import Header, Button, Static, SelectionList, Input
 from textual.app import App, ComposeResult
 from textual.containers import Container, Grid, Vertical
-from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
+from textual.screen import ModalScreen, Screen
+from textual.widgets import Button, Header, Input, SelectionList, Static
 
 import config
-from core import IconInstallerModel, IconExtractor, IconApplier, PathManager
+from core import IconApplier, IconExtractor, IconInstallerModel, PathManager
 
 
 class ConfirmationScreen(ModalScreen):
