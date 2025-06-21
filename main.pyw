@@ -2,7 +2,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
-from typing import Set, Dict, Any, cast, Union
+from typing import List, Set, Dict, Any, Tuple, cast, Union
 import threading
 from PIL import Image, ImageTk
 
@@ -140,7 +140,7 @@ class IconPackInstaller:
         next_btn.focus_set()
 
     def show_style_screen(self) -> None:
-        """Show style selection screen with minimal banner"""
+        """Show style selection screen with minimal banner and icon previews"""
         self.clear_screen()
 
         self.current_screen = ttk.Frame(self.main_frame)
@@ -171,13 +171,33 @@ class IconPackInstaller:
         subtitle_label = ttk.Label(title_frame, text="Choose the icon style you prefer")
         subtitle_label.pack(anchor="w", pady=(5, 0))
 
-        # Content area
+        # Content area with scrolling capability
         content_frame = ttk.Frame(self.current_screen)
         content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        # Style selection with descriptions
+        # Create scrollable frame for styles
+        canvas = tk.Canvas(content_frame)
+        scrollbar = ttk.Scrollbar(content_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Style selection with descriptions and previews
         for idx in range(1, len(self.model.styles) + 1):
             style_name, style_desc = self.model.get_style_info(idx)
+
+            # Create frame for this style option
+            style_frame = ttk.Frame(scrollable_frame)
+            style_frame.pack(fill="x", pady=10, padx=5)
 
             # Format the display text with description if available
             if style_desc:
@@ -185,9 +205,15 @@ class IconPackInstaller:
             else:
                 display_text = style_name
 
-            style_radio = ttk.Radiobutton(content_frame, text=display_text,
-                                          variable=self.style_choice, value=idx)
-            style_radio.pack(anchor="w", pady=5)
+            style_radio = ttk.Radiobutton(style_frame, text=display_text,
+                                        variable=self.style_choice, value=idx)
+            style_radio.pack(anchor="w")
+
+            # Load and display preview icons
+            preview_frame = ttk.Frame(style_frame)
+            preview_frame.pack(anchor="w", padx=(20, 0), pady=(5, 0))
+            
+            self.load_style_preview_icons(preview_frame, idx)
 
         # Spacer
         ttk.Frame(content_frame).pack(fill="both", expand=True)
@@ -205,6 +231,93 @@ class IconPackInstaller:
 
         back_btn = ttk.Button(button_frame, text="< Back", command=self.show_welcome_screen)
         back_btn.pack(side="right")
+
+    def load_style_preview_icons(self, preview_frame: ttk.Frame, style_idx: int) -> None:
+        """Load and display preview icons for a given style"""
+        try:
+            base_path = Path(__file__).parent
+            style_dir = base_path / "icons" / f"style{style_idx}"
+            
+            if not style_dir.exists():
+                return
+                
+            # Get up to 5 games for preview
+            preview_games: List[Tuple[str, Path]] = []
+            for _, (game_name, _, _) in self.model.game_mapping.items():
+                if len(preview_games) >= 5:
+                    break
+                
+                # Find icon files for this game
+                icon_files = self.model.find_icon_files(game_name, style_dir)
+                if icon_files:
+                    # Prefer JPG, then ICO, then any other format
+                    preferred_icon = None
+                    for icon_file in icon_files:
+                        ext = icon_file.suffix.lower()
+                        if ext in ('.jpg', '.jpeg'):
+                            preferred_icon = icon_file
+                            break
+                        elif ext == '.ico' and preferred_icon is None:
+                            preferred_icon = icon_file
+                        elif preferred_icon is None:
+                            preferred_icon = icon_file
+                    
+                    if preferred_icon:
+                        preview_games.append((game_name, preferred_icon))
+            
+            # Display preview icons
+            if preview_games:
+                for i, (game_name, icon_path) in enumerate(preview_games):
+                    try:
+                        # Load and resize image
+                        img = Image.open(icon_path)
+                        # Resize to small preview size
+                        img_resized = img.resize((32, 32), Image.Resampling.LANCZOS)
+
+                        photo = ImageTk.PhotoImage(img_resized)
+                        
+                        # Create label with image
+                        icon_label = ttk.Label(preview_frame, image=photo)
+
+                        icon_label.image = photo
+                        
+                        icon_label.pack(side="left", padx=(0, 5))
+                        
+                        # Add tooltip with game name
+                        self.create_tooltip(icon_label, game_name)
+                        
+                    except Exception as e:
+                        print(f"Error loading preview icon {icon_path}: {e}")
+                        continue
+            else:
+                # No preview icons available
+                no_preview_label = ttk.Label(preview_frame, text="(No preview available)", 
+                                            font=("Arial", 8), foreground="gray")
+                no_preview_label.pack(side="left")
+                
+        except Exception as e:
+            print(f"Error loading style preview for style {style_idx}: {e}")
+
+    def create_tooltip(self, widget: tk.Widget, text: str) -> None:
+        """Create a tooltip for a widget"""
+        def on_enter(event):
+            tooltip = tk.Toplevel()
+            tooltip.wm_overrideredirect(True)
+            tooltip.wm_geometry(f"+{event.x_root+10}+{event.y_root+10}")
+            
+            label = tk.Label(tooltip, text=text, background="lightyellow", 
+                            relief="solid", borderwidth=1, font=("Arial", 8))
+            label.pack()
+            
+            widget.tooltip = tooltip
+
+        def on_leave(event):
+            if hasattr(widget, 'tooltip'):
+                widget.tooltip.destroy()
+                del widget.tooltip
+
+        widget.bind("<Enter>", on_enter)
+        widget.bind("<Leave>", on_leave)
 
     def show_game_selection_screen(self) -> None:
         """Show game selection screen"""
