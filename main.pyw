@@ -1,13 +1,14 @@
 import sys
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from pathlib import Path
-from typing import List, Set, Dict, Any, Tuple, cast, Union
 import threading
+import tkinter as tk
+from pathlib import Path
+from tkinter import filedialog, messagebox, ttk
+from typing import Any, Dict, List, Set, Tuple, Union, cast
+
 from PIL import Image, ImageTk
 
 import config
-from core import IconInstallerModel, IconExtractor, IconApplier, PathManager
+from core import IconApplier, IconExtractor, IconInstallerModel, PathManager
 
 
 class IconPackInstaller:
