@@ -1,0 +1,12 @@
+[project]
+name = "IconPackApp"
+authors = [{name = "dsafxP", email = "ghostyn678+git@gmail.com"}]
+version = "0.1"
+description = "A simple app to apply custom game icons to your Steam games."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    "pillow>=12.0.0",
+]
