@@ -13,6 +13,5 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pyrefly>=0.43.0",
     "isort>=7.0.0"
 ]
