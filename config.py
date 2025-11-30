@@ -1,6 +1,6 @@
-NAME = "⚙️ MY ICON PACK" # Name displayed at the top
+TITLE = "My icon pack Setup" # Window title
 
-CREDITS = "Made with 💚 by dsafxP" # Displayed at the bottom
+CREDITS = "Made with 💚 by dsafxP" # Displayed at exit screen
 
 # Styles can be defined as:
 # - Simple string: "Style Name" (no description)

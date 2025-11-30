@@ -1,6 +1,6 @@
 # IconPackApp ![GitHub License](https://img.shields.io/github/license/dsafxP/IconPackApp)
 
-A simple TUI app to apply custom game icons ("styles") to your Steam games.
+A simple GUI app to apply custom game icons ("styles") to your Steam games.
 
 ## Getting Started
 
@@ -10,7 +10,7 @@ A simple TUI app to apply custom game icons ("styles") to your Steam games.
    ```
 2. **Run the app**  
    ```bash
-   python main.py
+   python main.pyw
    ```
 
 ## Adding a new style
@@ -67,9 +67,11 @@ A simple TUI app to apply custom game icons ("styles") to your Steam games.
 │       ├── Half-Life.ico
 │       ├── Half-Life.jpg     ← Library icon
 │       └── My Game.png
+├── banner.png
 ├── build.py
 ├── config.py
 ├── main.py
+├── min_banner.png
 ├── README.md
 └── styles.css
 ```
